@@ -1,0 +1,1 @@
+# SmartDuelist-Auto-Battle-Tool-for-YGODL
