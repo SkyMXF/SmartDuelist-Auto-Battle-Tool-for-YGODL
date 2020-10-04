@@ -13,7 +13,11 @@ DUEL_FINISH_NEXT_RECT = (443, 557, 588, 602)
 AFTER_DUEL_ACTIVITY_NEXT_RECT = (442, 463, 592, 508)
 
 MY_MONSTER_SEATS_RECT = [(415, 315, 487, 408), (475, 315, 557, 408), (544, 315, 618, 408)]
-OPPO_MONSTER_SEATS_RECT = [(420, 197, 450, 275), (482, 200, 550, 276), (544, 200, 610, 277)]
+OPPO_MONSTER_SEATS_RECT = [(420, 197, 482, 275), (482, 200, 550, 276), (544, 200, 610, 277)]
+
+STAGE_CHECK_RECT = (640, 230, 740, 477)
+
+GAME_RESET_FLAGRECT = (376, 342, 651, 394)
 
 class ButtonNotFoundException(Exception):
     def __init__(self, button_subs="unknown button"):
@@ -39,9 +43,17 @@ def isDisconnected():
         os.path.join(template_dir, "disconnect.png"),
         *window.game_window_rect
     )
-    if pos[0] == -1:
-        return False
-    return True
+    if pos[0] != -1:
+        return True
+    
+    pos = imagesearch.imagesearcharea(
+        os.path.join(template_dir, "resetGameFlag.png"),
+        *window.game_window_rect
+    )
+    if pos[0] != -1:
+        return True
+
+    return False
 
 def findGate():
     gate_template_dir = os.path.join(template_dir, "gate")
@@ -107,13 +119,23 @@ def afterDuelActivityNextFlag():
         *pos_rel2abs(AFTER_DUEL_ACTIVITY_NEXT_RECT)
     )
     if pos[0] != -1:
-        return True
+        return pos_rel2abs(pos)
         
     pos = imagesearch.imagesearcharea(
         os.path.join(template_dir, "afterDuelActivityNext2.png"),
         *pos_rel2abs(AFTER_DUEL_ACTIVITY_NEXT_RECT)
     )
-    return pos[0] != -1
+    if pos[0] != -1:
+        return pos_rel2abs(pos)
+
+    pos = imagesearch.imagesearcharea(
+        os.path.join(template_dir, "afterDuelActivityNext3.png"),
+        *pos_rel2abs(AFTER_DUEL_ACTIVITY_NEXT_RECT)
+    )
+    if pos[0] != -1:
+        return pos_rel2abs(pos)
+
+    return None
 
 def monsterSelected():
     pos = imagesearch.imagesearcharea(
@@ -123,15 +145,34 @@ def monsterSelected():
     )
     return pos[0] != -1
 
+def checkStage():
+    pos = imagesearch.imagesearcharea(
+        os.path.join(template_dir, "duelStageM2B.png"),
+        *pos_rel2abs(STAGE_CHECK_RECT),
+        precision=0.7
+    )
+    if pos[0] != -1:
+        return 0    # main stage now
+    
+    pos = imagesearch.imagesearcharea(
+        os.path.join(template_dir, "duelStageB2E.png"),
+        *pos_rel2abs(STAGE_CHECK_RECT),
+        precision=0.7
+    )
+    if pos[0] != -1:
+        return 1    # battle stage now
+    
+    return -1   # unknown stage
+
 def getMyMonsterSeatsList():
     seats_list = []
     for seat_id in range(1, 4):
         pos = imagesearch.imagesearcharea(
             os.path.join(template_dir, "emptySeatMyMon%d.png"%(seat_id)),
             *pos_rel2abs(MY_MONSTER_SEATS_RECT[seat_id - 1]),
-            precision=0.5
+            precision=0.8
         )
-        seats_list.append(pos == -1)
+        seats_list.append(pos[0] == -1)
 
     return seats_list
 
@@ -140,8 +181,10 @@ def getOppoMonsterSeatsList():
     for seat_id in range(1, 4):
         pos = imagesearch.imagesearcharea(
             os.path.join(template_dir, "emptySeatOppoMon%d.png"%(seat_id)),
-            *pos_rel2abs(OPPO_MONSTER_SEATS_RECT[seat_id - 1])
+            *pos_rel2abs(OPPO_MONSTER_SEATS_RECT[seat_id - 1]),
+            precision=0.3
         )
-        seats_list.append(pos == -1)
-
+        print(pos)
+        seats_list.append(pos[0] == -1)
+    print(seats_list)
     return seats_list

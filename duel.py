@@ -5,6 +5,7 @@ import window
 import img_search
 import delay
 
+SKIP_TALKING_POS = (328, 224)#50x50
 SKIP_DUEL_ANIMATION_POS = (679, 131)#45x45
 SKIP_DUEL_ANIMATION_MAX_TIMES = 100
 
@@ -21,9 +22,11 @@ NEXT_STAGE_POS = (689, 393)#24x24
 
 DUEL_END_POS = (474, 568)#85x20
 DUEL_END_NEXT_POS = (471, 568)#90x20
+DUEL_END_NEXT_CHECK_TIMES = 5
 DUEL_END_NEXT_MAX_TIMES = 50
 AFTER_DUEL_ACTIVITY_NEXT = (473, 476)#90x20
-AFTER_DUEL_ACTIVITY_MAX_TIMES = 20
+AFTER_DUEL_ACTIVITY_CHECK_TIMES = 5
+AFTER_DUEL_ACTIVITY_MAX_TIMES = 10
 
 def clickRandomPos(pos, x_move_max, y_move_max):
     x_move = random.randint(0, x_move_max)
@@ -75,9 +78,16 @@ def selectMonster():
 def nextStage():
     pos = img_search.pos_rel2abs(NEXT_STAGE_POS)
     clickRandomPos((pos[0] + 2, pos[1] + 2), 20, 20)
-    delay.random_float_delay(0.3, 0.5)
+    delay.random_float_delay(0.5, 0.5)
+    
+    stage_id = img_search.checkStage()
+    if stage_id < 0:
+        raise img_search.ButtonNotFoundException("unknown stage")
+
     clickRandomPos((pos[0] + 2, pos[1] + 2), 20, 20)
     delay.random_float_delay(0.3, 0.5)
+
+    return stage_id
 
 def allMonsterAttack():
     my_monster_seats = img_search.getMyMonsterSeatsList()
@@ -91,10 +101,11 @@ def allMonsterAttack():
                     moveToRandomPos((pos[0] + 27, pos[1] + 32), 15, 20)
                     pyautogui.mouseDown()
                     pos = img_search.pos_rel2abs(OPPO_MONSTER_SEATS_POS[oppo_seat_id])
-                    moveToRandomPos((pos[0] + 27, pos[1] + 32), 15, 20, duration=0.5)
+                    moveToRandomPos((pos[0] + 27, pos[1] + 32), 15, 20, duration=0.2)
                     pyautogui.mouseUp()
                     skipDuelAnimation()
                     delay.random_float_delay(0.8, 0.2)
+                    break
 
 def afterDuelNext():
     pos = img_search.pos_rel2abs(DUEL_END_NEXT_POS)
@@ -103,6 +114,8 @@ def afterDuelNext():
             clickRandomPos((pos[0] + 2, pos[1] + 2), 86, 16)
             delay.random_float_delay(0.3, 0.2)
             return
+        temp_pos = img_search.pos_rel2abs(SKIP_DUEL_ANIMATION_POS)
+        clickRandomPos((temp_pos[0] + 10, temp_pos[1] + 10), 30, 30)
         delay.random_float_delay(0.5, 0.2)
     
     # retry too much times
@@ -110,23 +123,27 @@ def afterDuelNext():
 
 def afterDuelActivityNext():
     pos = img_search.pos_rel2abs(AFTER_DUEL_ACTIVITY_NEXT)
+    skip_pos = img_search.pos_rel2abs(SKIP_TALKING_POS)
     overtime_flag = True
-    for _ in range(AFTER_DUEL_ACTIVITY_MAX_TIMES):
-        if img_search.afterDuelActivityNextFlag():
-            overtime_flag = False
-            break
-        delay.random_float_delay(0.3, 0.2)
-    
-    if overtime_flag:
-        raise img_search.ButtonNotFoundException("after duel activity next flag")
-
-    for _ in range(AFTER_DUEL_ACTIVITY_MAX_TIMES):
-        if not img_search.afterDuelActivityNextFlag():
-            return
-        clickRandomPos((pos[0] + 2, pos[1] + 2), 86, 16)
-        delay.random_float_delay(0.3, 0.2)
+    for _ in range(AFTER_DUEL_ACTIVITY_CHECK_TIMES):
+        for _ in range(AFTER_DUEL_ACTIVITY_MAX_TIMES):
+            if img_search.afterDuelActivityNextFlag():
+                overtime_flag = False
+                break
+            clickRandomPos((skip_pos[0] + 5, skip_pos[1] + 5), 40, 40)
+            delay.random_float_delay(0.3, 0.2)
         
-    raise img_search.ButtonNotFoundException("after duel activity next flag")
+        if overtime_flag:
+            #raise img_search.ButtonNotFoundException("after duel activity next flag")
+            return
+
+        for _ in range(AFTER_DUEL_ACTIVITY_MAX_TIMES):
+            if not img_search.afterDuelActivityNextFlag():
+                return
+            clickRandomPos((pos[0] + 2, pos[1] + 2), 86, 16)
+            delay.random_float_delay(0.3, 0.2)
+
+    #raise img_search.ButtonNotFoundException("after duel activity next flag")
 
 def endDuel():
     pos = img_search.pos_rel2abs(DUEL_END_POS)
